@@ -39,7 +39,6 @@ class Gatherer(object):
         comment_objs = \
             reddit_instance.subreddit('AskHistorians').comments(limit=lim)
         for ind, comment_obj in enumerate(comment_objs):
-            print(ind)
             comment_details = self.get_comment_details(comment_obj)
             if comment_details is not None:
                 self.store_comment_details(comment_details, reddit_instance)
@@ -60,18 +59,6 @@ class Gatherer(object):
             print('Could not retrive all comment details')
             return None
 
-    def is_top_level(self, comment_id, reddit_instance):
-        """
-        Checks to see if comment is a top level comment. If not, returns
-        False, otherwise, True
-        """
-        comment_obj = reddit_instance.comment(id=comment_id)
-        if comment_obj.parent_id.split('_')[0] == 't3':
-        #         Parent is a post, therefore top level comment.
-            return True
-        else:
-            return False
-
     def store_comment_details(self, comment_details, reddit_instance):
         comment_id, author, creation_stamp, comment_str, perma = \
             comment_details[:]
@@ -89,18 +76,17 @@ class Gatherer(object):
         else:
             pass
 
-    def is_in_DB(self, comment_id, db_cursor):
+    def is_top_level(self, comment_id, reddit_instance):
         """
-        Checks the given comment is not already in the DB. Returns True,
-        if not found, otherwise False.
+        Checks to see if comment is a top level comment. If not, returns
+        False, otherwise, True
         """
-        db_cursor.execute("SELECT CommentID FROM Comments WHERE CommentID=?",
-                          (comment_id,))
-        data = db_cursor.fetchone()
-        if data is None:
-            return False
-        else:
+        comment_obj = reddit_instance.comment(id=comment_id)
+        if comment_obj.parent_id.split('_')[0] == 't3':
+        #         Parent is a post, therefore top level comment.
             return True
+        else:
+            return False
 
     def comment_into_DB(self, comment_details_tuple):
         comment_id, author, creation_stamp, comment_str, perma, removed, \
@@ -116,7 +102,20 @@ class Gatherer(object):
         db.commit()
         db.close()
 
-    def check_stale_comments(self, reddit_instance, stale_days=7):
+    def is_in_DB(self, comment_id, db_cursor):
+        """
+        Checks the given comment is not already in the DB. Returns True,
+        if not found, otherwise False.
+        """
+        db_cursor.execute("SELECT CommentID FROM Comments WHERE CommentID=?",
+                          (comment_id,))
+        data = db_cursor.fetchone()
+        if data is None:
+            return False
+        else:
+            return True
+
+    def check_stale_comments(self, reddit_instance, stale_days=7, verbose=0):
         """
         This runs through the DB, and checks on comments that are not
         older than x days, and are not removed (Removed=0).
@@ -129,7 +128,7 @@ class Gatherer(object):
         removed_bool = 0
         comment_id_list = self.get_comment_id_list(t_limit, removed_bool)
         print('Length of comment id list to check ', len(comment_id_list))
-        self.update_db_comments(reddit_instance, comment_id_list)
+        self.update_db_comments(reddit_instance, comment_id_list, verbose)
 
     def stale_time_limit(self, stale_days):
     #     Set the stale time limit for which
@@ -155,20 +154,26 @@ class Gatherer(object):
         db.close()
         return comment_id_list
 
-    def update_db_comments(self, reddit_instance, comment_id_list):
+    def update_db_comments(self, reddit_instance, comment_id_list, verbose):
         """
         Checks DB to see if any comments were removed. If removed sets Removed
         column to 1 (True), else, 0 (False), and updates the time for which it
         was checked.
         """
+        removed_count = 0
+
         db = sqlite3.connect(self.db_name)
         cursor = db.cursor()
+
         for ind, c_id in enumerate(comment_id_list):
-            print('checking ', ind)
+            if verbose == 1:
+                print('checking ', ind)
             comment_flag = self.comment_removed(reddit_instance, c_id)
+
             last_checked = int(time.time())
 
             if comment_flag:
+                removed_count += 1
                 cursor.execute("UPDATE Comments SET Removed=?, LastChecked=? WHERE CommentID=?",
                                (1, last_checked, c_id))
 
@@ -177,6 +182,7 @@ class Gatherer(object):
                                (0, last_checked, c_id))
         db.commit()
         db.close()
+        print('Total removed comments: ', removed_count)
 
     def comment_removed(self, r, comment_id):
         """

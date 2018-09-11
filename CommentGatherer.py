@@ -135,6 +135,8 @@ class Gatherer(object):
     #     comments are unlikely to change
         current_time_epoch = int(time.time())
         seconds_in_day = 86400.0
+        # t_limit is the epoch time for which, comments older (smaller epoch)
+        # are not considered.
         t_limit = current_time_epoch - (seconds_in_day * stale_days)
         return t_limit
 

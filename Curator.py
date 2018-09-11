@@ -84,8 +84,12 @@ def Background(gatherer, reddit_instance, limit, stale_days, time_limit):
     current_time = time.time() - start_t
     time_limit_seconds = time_limit * 60.0
     while current_time <= time_limit_seconds:
-        Checker(gatherer, reddit_instance, stale_days)
-        Gather(gatherer, reddit_instance, limit)
+        try:
+            Checker(gatherer, reddit_instance, stale_days)
+            Gather(gatherer, reddit_instance, limit)
+        except:
+            pass
+
         print('\n Sleeping...')
         time.sleep(5 * 60)
         print('\n Awake...')

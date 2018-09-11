@@ -15,6 +15,15 @@ This gathers the latest 100 comments from ask historians.
 $python Curator.py 'database name' 'client id' 'client secret' 'check'
     -s 7
 Checks all comments younger than seven days, to see if they have been removed
+
+## Run in background mode
+
+$python Curator.py 'database name' 'client id' 'client secret' 'background'
+    -l 100 -s 7 -t 20
+Will run Checker with a stale days flag of 7 days, and then Gatherer with a
+limit of 100 comments max to get, consecutively until the time limit of 20
+minutes is reached. After each pair of actions, the algorithm sleeps for five
+minutes.
 """
 import CommentGatherer as cg
 import sys

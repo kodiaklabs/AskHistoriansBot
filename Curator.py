@@ -88,7 +88,8 @@ def Background(gatherer, reddit_instance, limit, stale_days, time_limit):
             Checker(gatherer, reddit_instance, stale_days)
             Gather(gatherer, reddit_instance, limit)
         except:
-            pass
+            print('Unable to perform Checking and/or Gathering.')
+            print('Going back to sleep.')
 
         print('\n Sleeping...')
         time.sleep(5 * 60)

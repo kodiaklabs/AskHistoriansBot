@@ -14,7 +14,13 @@ import time
 
 
 class Gatherer(object):
-    """docstring for Gatherer"""
+    """
+    Gatherer connects to the Reddit API and from there is able to gather
+    the new comments, assess and store them. It can also be used to check
+    so-called stale comments: Comments that are possibly older than a certain
+    time-frame. If they are older than a given date, they are assumed that
+    they will not be removed.
+    """
     def __init__(self, db_name):
         self.db_name = db_name
 
@@ -49,6 +55,7 @@ class Gatherer(object):
                 if entered:
                     counter += 1
         print('Number of comments entered into DB: ', counter)
+        return comment_objs
 
     def get_comment_details(self, comment_obj):
         try:
